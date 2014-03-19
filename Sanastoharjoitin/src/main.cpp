@@ -6,16 +6,17 @@
 
 using namespace std;
 
-struct change {
-	char type, from, to;
+struct muutos {
+	char tyyppi, mista, mihin;
 
-	change(char a, char b, char c) :type(a), from(b), to(c) {}
+	muutos(char a, char b, char c) :tyyppi(a), mista(b), mihin(c) {}
 };
 
-vector<change> changes(const string &s1, const string &s2) {
+vector<muutos> levenshtein(const string &s1, const string &s2) {
 	int *dyn = new int[(s1.size() + 1)*(s2.size() + 1)];
 	int offset = s1.size() + 1;
 
+	// Alustetaan taulukko
 	for (int i = 0; i <= s1.size(); i++) {
 		dyn[i] = i;
 	}
@@ -23,6 +24,7 @@ vector<change> changes(const string &s1, const string &s2) {
 		dyn[offset*i] = i;
 	}
 
+	// Muodostetaan Levenshteinin taulukko
 	for (int i = 1; i <= s1.size(); i++) {
 		for (int j = 1; j <= s2.size(); j++) {
 			dyn[offset*j + i] = min(min(
@@ -32,95 +34,95 @@ vector<change> changes(const string &s1, const string &s2) {
 		}
 	}
 
-	// Find the shortest path
+	// Etsit‰‰n lyhin reitti taulukon l‰pi
 	int i = s1.size();
 	int j = s2.size();
-	vector<change> res;
+	vector<muutos> vastaus;
 	while (i > 0 || j > 0) {
-		int cur = dyn[offset*j + i];
-		int del = (i >= 1) ? dyn[offset*j + i - 1] : -2;
-		int ins = (j >= 1) ? dyn[offset*(j - 1) + i] : -2;
-		int edit = (i >= 1 && j >= 1) ? dyn[offset*(j - 1) + i - 1] : -2;
+		int nykyinen = dyn[offset*j + i];
+		int poisto = (i >= 1) ? dyn[offset*j + i - 1] : -2;
+		int lisays = (j >= 1) ? dyn[offset*(j - 1) + i] : -2;
+		int sama = (i >= 1 && j >= 1) ? dyn[offset*(j - 1) + i - 1] : -2;
 
-		if (edit + 1 == cur) {
-			// Change
-			res.push_back(change(1, s1[i - 1], s2[j - 1]));
+		if (sama + 1 == nykyinen) {
+			// Merkin muutos
+			vastaus.push_back(muutos(1, s1[i - 1], s2[j - 1]));
 			i--;
 			j--;
-		} else if (ins+1==cur) {
-			// Insering
-			res.push_back(change(2, 0, s2[j - 1]));
+		} else if (lisays+1==nykyinen) {
+			// Lis‰ys
+			vastaus.push_back(muutos(2, 0, s2[j - 1]));
 			j--;
-		} else if (del + 1 == cur) {
-			// Deleting
-			res.push_back(change(3, s1[i - 1], 0));
+		} else if (poisto + 1 == nykyinen) {
+			// Poisto
+			vastaus.push_back(muutos(3, s1[i - 1], 0));
 			i--;
-		}else if (edit == cur) {
-			// Same characters
-			res.push_back(change(0, s1[i - 1], s1[i - 1]));
+		}else if (sama == nykyinen) {
+			// Ei muutosta
+			vastaus.push_back(muutos(0, s1[i - 1], s1[i - 1]));
 			i--;
 			j--;
 		} else {
-			// ERROR!!!
+			// Miten ihmeess‰ t‰nne p‰‰dyttiin?
 		}
 	}
 
-	reverse(res.begin(), res.end());
+	// Vastaus muodostettiin k‰‰nteisess‰ j‰rjestyksess‰ -> korjataan asia
+	reverse(vastaus.begin(), vastaus.end());
 
+	// Vapautetaan hieman muistia
 	delete[] dyn;
-	return res;
+
+	return vastaus;
 }
 
-void printDiff(const vector<change> &changes) {
-	// Original
-	for (const change &c : changes) {
-		switch (c.type) {
+void tulostaAluperainen(const vector<muutos> &muutokset) {
+	for (const muutos &muutos : muutokset) {
+		switch (muutos.tyyppi) {
 		case 0:
-			// Keep this
-			cout << b_black <<f_white<< c.from;
+			// Sama merkki
+			cout << b_black << f_white << muutos.mista;
 			break;
 		case 1:
-			// Change
-			cout << b_yellow << f_black << c.from;
+			// Merkin muutos
+			cout << b_yellow << f_black << muutos.mista;
 			break;
 		case 2:
-			// Insertion
-			cout << b_black  << " ";
+			// Lis‰ys
+			cout << b_black << " ";
 			break;
 		case 3:
-			// Deletion
-			cout << b_red << f_black << c.from;
-			break;
-		default:
+			// Poisto
+			cout << b_red << f_black << muutos.mista;
 			break;
 		}
 	}
-	cout << endl;
+	// Palautetaan v‰rit kohdalleen
+	cout << b_black << f_white;
 
-	// Changed
-	for (const change &c : changes) {
-		switch (c.type) {
+}
+void tulostaMuutettu(const vector<muutos> &muutokset) {
+	for (const muutos &muutos : muutokset) {
+		switch (muutos.tyyppi) {
 		case 0:
-			// Keep this
-			cout << b_black << f_white << c.to;
+			// Sama merkki
+			cout << b_black << f_white << muutos.mihin;
 			break;
 		case 1:
-			// Change
-			cout << b_yellow<<f_black << c.to;
+			// Merkin muutos
+			cout << b_yellow<<f_black << muutos.mihin;
 			break;
 		case 2:
-			// Insertion
-			cout << b_green << f_black << c.to;
+			// Lis‰ys
+			cout << b_green << f_black << muutos.mihin;
 			break;
 		case 3:
-			// Deletion
+			// Poisto
 			cout <<b_black<< " ";
 			break;
-		default:
-			break;
 		}
 	}
-	cout << endl;
+	// Palautetaan v‰rit kohdalleen
 	cout << b_black << f_white;
 }
 
@@ -128,7 +130,10 @@ int main() {
 	string a, b;
 	while (1) {
 		cin >> a >> b;
-		vector<change> c = changes(a, b);
-		printDiff(c);
+		vector<muutos> muutokset = levenshtein(a, b);
+		tulostaAluperainen(muutokset);
+		cout << endl;
+		tulostaMuutettu(muutokset);
+		cout << endl;
 	}
 }
